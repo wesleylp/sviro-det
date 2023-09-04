@@ -1,4 +1,5 @@
 import albumentations as A
+import click
 import torch
 from albumentations.pytorch import ToTensorV2
 from objdetecteval.metrics.coco_metrics import get_coco_stats
@@ -31,41 +32,10 @@ def load_model(checkpoint_path):
     return model
 
 
-if __name__ == "__main__":
-
-    # TODO: implement as argument
-    checkpoint_path = "outputs/last.ckpt"
-    dataset_path = "/home/wesley.passos/repos/sviro/data"
-    prediction_confidence_threshold = 0.5
-
-    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-    transforms = A.Compose([
-        ToTensorV2(),
-    ])
-    dataset = SVIRODetection(
-        dataroot=dataset_path,
-        car=["aclass"],
-        split='test',
-        mapping={'infant_seat': 1},
-        transform=transforms,
-    )
-
-    test_loader = torch.utils.data.DataLoader(dataset,
-                                              batch_size=4,
-                                              shuffle=False,
-                                              num_workers=4,
-                                              pin_memory=True,
-                                              drop_last=False,
-                                              collate_fn=custom_collate_fn)
-
-    model = load_model(checkpoint_path)
-    model.to(device)
-    model.eval()
-
+def model_inference(model, dataloader, prediction_confidence_threshold=0.5, device='cuda'):
     outputs = []
     targets = []
-    for batch_images, batch_targets in test_loader:
+    for batch_images, batch_targets in dataloader:
 
         images = list(image.to(device) for image in batch_images)
 
@@ -101,3 +71,50 @@ if __name__ == "__main__":
         target_bboxes=truth['boxes'],
         target_class_labels=truth['labels'],
     )['All']
+
+    return stats, prediction, truth
+
+
+@click.command()
+@click.option('--checkpoint-path', default='outputs/last.ckpt', type=str, required=True)
+@click.option('--dataset-path',
+              default='/home/wesley.passos/repos/sviro/data',
+              type=str,
+              required=True)
+@click.option('--prediction-confidence-threshold', default=0.5, type=float, required=True)
+@click.option('--device', default='cuda', type=str, required=True)
+def run_inference(checkpoint_path, dataset_path, prediction_confidence_threshold, device):
+
+    device = torch.device(device)
+
+    transforms = A.Compose([
+        ToTensorV2(),
+    ])
+    dataset = SVIRODetection(
+        dataroot=dataset_path,
+        car=["aclass"],
+        split='test',
+        mapping={'infant_seat': 1},
+        transform=transforms,
+    )
+
+    test_loader = torch.utils.data.DataLoader(dataset,
+                                              batch_size=4,
+                                              shuffle=False,
+                                              num_workers=4,
+                                              pin_memory=True,
+                                              drop_last=False,
+                                              collate_fn=custom_collate_fn)
+
+    model = load_model(checkpoint_path)
+    model.to(device)
+    model.eval()
+
+    model_inference(model,
+                    test_loader,
+                    prediction_confidence_threshold=prediction_confidence_threshold,
+                    device=device)
+
+
+if __name__ == "__main__":
+    run_inference()

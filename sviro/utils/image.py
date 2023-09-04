@@ -43,7 +43,11 @@ def draw_bouding_box(image, bbox, color=(255, 0, 0), thickness=2):
     if image.ndim == 2:
         image = np.concatenate([image[..., np.newaxis]] * 3, axis=2)
 
-    box = bbox[1:].cpu().numpy()
-    return cv2.rectangle(image, (box[0], box[1]), (box[2], box[3]),
+    if isinstance(bbox, torch.Tensor):
+        bbox = bbox.cpu().numpy()
+        print(bbox)
+
+    bbox = bbox.astype(int)
+    return cv2.rectangle(image, (bbox[0], bbox[1]), (bbox[2], bbox[3]),
                          color=color,
                          thickness=thickness)

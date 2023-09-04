@@ -26,9 +26,9 @@ class SVIRODataModule(pl.LightningDataModule):
         data_dir: str,
         batch_size: int,
         num_workers: int,
-        train_car: [str, list] = "x5",
-        val_car: [str, list] = "zoe",
-        test_car: [str, list] = "classa",
+        train_car: [str | list[str]] = ["x5"],
+        val_car: [str | list[str]] = ["zoe"],
+        test_car: [str | list[str]] = ["aclass"],
         labels_mapping=None,
         seed: int = 42,
         pin_memory: bool = True,
@@ -36,6 +36,21 @@ class SVIRODataModule(pl.LightningDataModule):
         *args,
         **kwargs,
     ) -> None:
+        """SVIRO DataModule
+
+        Args:
+            data_dir (str): Folder containing the dataset
+            batch_size (int): batch size
+            num_workers (int): number of workers
+            train_car (str  |  list[str]], optional): "all" or list of car names. Defaults to ["x5"].
+            val_car (str  |  list[str]], optional): "all" or list of car names. Defaults to ["zoe"].
+            test_car (str  |  list[str]], optional): "all" or list of car names. Defaults to ["aclass"].
+            labels_mapping (None | dict, optional): mapping class names into indexes. Defaults to None.
+            seed (int, optional): seed. Defaults to 42.
+            pin_memory (bool, optional): See pytorch docs. Defaults to True.
+            debug (bool, optional): Load small portion for debugging purposes. Defaults to False.
+        """
+
         super().__init__(*args, **kwargs)
 
         self.data_dir = data_dir
@@ -166,34 +181,3 @@ class SVIRODataModule(pl.LightningDataModule):
 
     def custom_collate_fn(self, batch):
         return collate_fn(batch)
-
-
-if __name__ == "__main__":
-
-    dataset_path = ("/home/wesley.passos/repos/sviro/data")
-
-    dm = SVIRODataModule(
-        data_dir=dataset_path,
-        batch_size=4,
-        num_workers=4,
-    )
-
-    dm.setup()
-
-    dm.val_transforms = transform_lib.Compose([
-        transform_lib.ToTensor(),
-        transform_lib.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225],
-        ),
-        transform_lib.Grayscale(num_output_channels=1),
-    ])
-
-    train_loader = dm.train_dataloader()
-    val_loader = dm.val_dataloader()
-    test_loader = dm.test_dataloader()
-
-    for i, (img, mask) in enumerate(val_loader):
-        print(img.shape)
-        if i > 10:
-            break

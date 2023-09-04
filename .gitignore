@@ -274,3 +274,4 @@ outputs
 data
 mlruns
 lightning_logs
+models/

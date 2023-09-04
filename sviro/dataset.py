@@ -30,6 +30,18 @@ class SVIRODetection(Dataset):
                  filter_empty: bool = False,
                  transform: [None | albumentations.Compose] = None,
                  debug=False):
+        """SVIRO dataset
+
+        Args:
+            dataroot (str): folder containing the dataset
+            car (str  |  list[str]]): "all" or list of car names
+            split (str): "train", "test" or "all"
+            mapping (dict, optional): mapping classes names into indexes. Defaults to { 'empty': 0, 'infant_seat': 1, 'child_seat': 2, 'person': 3, 'everyday_object': 4 }.
+            filter_empty (bool, optional): filter images without bounding boxes. Defaults to False.
+            transform (None  |  albumentations.Compose], optional): Image augmentations. Defaults to None.
+            debug (bool, optional): Load small portion for debugging. Defaults to False.
+        """
+
         self.dataroot = Path(dataroot)
 
         self._split = '*' if split == 'all' else f"{split}*"  # train, test or all
@@ -140,16 +152,3 @@ class SVIRODetection(Dataset):
         }
 
         return image, target
-
-
-if __name__ == '__main__':
-
-    dataset = SVIRODetection(dataroot='data',
-                             mapping={
-                                 'infant_seat': 0,
-                                 'everyday_object': 1,
-                             },
-                             car=['x5'],
-                             split='train')
-
-    a = dataset[0]

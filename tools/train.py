@@ -4,6 +4,7 @@ import sys
 from pprint import pprint
 
 import albumentations as A
+import click
 import torchvision.models.detection as detection_arch
 from albumentations.pytorch import ToTensorV2
 from mlflow import log_artifact, log_metric, log_params
@@ -15,31 +16,21 @@ from torchvision.models.detection import (FasterRCNN_ResNet50_FPN_Weights, faste
 from sviro.datamodule import SVIRODataModule
 from sviro.models import DetectorModel
 
-
-def run_args():
-    #TODO: implement with argparse
-    parser = argparse.ArgumentParser(description='Child seat detection training script')
-    # parser.add_argument('--arg', type=int, default=42)
-
-    args = parser.parse_args()
-
-    return args
+#TODO: implement with config file (hydra)
 
 
-def main():
-    args = run_args()
+@click.command()
+@click.option('--dataset_path',
+              default='/home/wesley.passos/repos/sviro/data',
+              type=str,
+              help='Path to dataset')
+@click.option('--max_epochs', default=50, type=int, help='Number max of epochs')
+def main(dataset_path, max_epochs):
 
     seed_everything(42)
 
-    # log params mlflow
-    log_params(vars(args))
     out_dirpath = os.path.join(os.getcwd(), 'outputs')
     os.makedirs(out_dirpath, exist_ok=True)
-
-    max_epochs = 50
-    debug = False
-
-    dataset_path = ("/home/wesley.passos/repos/sviro/data")
 
     datamodule = SVIRODataModule(
         data_dir=dataset_path,
@@ -47,14 +38,13 @@ def main():
         num_workers=4,
         train_car=["x5"],
         val_car=["zoe"],
-        test_car=["classa"],
+        test_car=["aclass"],
         labels_mapping={'infant_seat': 1},
-        debug=debug,
     )
 
     datamodule.setup()
 
-    # TODO: implement with argparse
+    # TODO: implement with config file
     # maybe as the number of hparams is increasing
     # it is better to use a config file hydra
     datamodule.train_transforms = A.Compose([

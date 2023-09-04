@@ -1,12 +1,11 @@
+from typing import Any
+
 import torch
 from objdetecteval.metrics.coco_metrics import get_coco_stats
 from pytorch_lightning import LightningModule
 
-from sviro.utils.predictions import aggregate_preds_outputs
-
-
-def collate_fn(batch):
-    return tuple(zip(*batch))
+from sviro.utils.predictions import (aggregate_preds_outputs,
+                                     postprocess_single_image_detections)
 
 
 class DetectorModel(LightningModule):
@@ -134,3 +133,29 @@ class DetectorModel(LightningModule):
             'interval': 'epoch',
             'monitor': 'val_loss_epoch_average'
         }]
+
+    def predict(self, images: torch.Tensor, prediction_confidence_threshold=0.5):
+        """Predicts the class and bounding box for each object in the image.
+
+        Args:
+            images ([torch.Tensor): the images tensor returned from the dataloader.
+
+        Returns:
+            [type]: [description]
+        """
+        self.model.eval()
+
+        images = list(image.to(self.device) for image in images)
+
+        with torch.no_grad():
+            outputs = self.model(images)
+
+        prediction = {'labels': [], 'boxes': [], 'scores': []}
+        for output in outputs:
+            preds = postprocess_single_image_detections(output, prediction_confidence_threshold)
+
+            prediction['labels'].append(preds['classes'])
+            prediction['boxes'].append(preds['boxes'])
+            prediction['scores'].append(preds['scores'])
+
+        return prediction
