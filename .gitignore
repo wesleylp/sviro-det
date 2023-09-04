@@ -273,4 +273,4 @@ pyrightconfig.json
 outputs
 data
 mlruns
-lightining_logs
+lightning_logs
